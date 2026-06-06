@@ -196,8 +196,8 @@ function t2s(t, l, p, n, vtv, i, pt, path, tables, tI)
     l += indent -- set indentation level
     for k, v in next, t do -- iterates over table
         size = size + 1 -- changes size for max limit
-        if size > (getgenv().SimpleSpyMaxTableSize or 1000) then
-            s = s .. "\n" .. string.rep(" ", l) .. "-- MAXIMUM TABLE SIZE REACHED, CHANGE 'getgenv().SimpleSpyMaxTableSize' TO ADJUST MAXIMUM SIZE "
+        if size > 1000 then
+            s = s .. "\n" .. string.rep(" ", l) .. "-- MAXIMUM TABLE SIZE REACHED "
             break
         end
         if rawequal(k, t) then -- checks if the table being iterated over is being used as an index within itself (yay, lua)
@@ -305,7 +305,7 @@ function formatstr(s, indentation)
         indentation = 0
     end
     local handled, reachedMax = handlespecials(s, indentation)
-    return '"' .. handled .. '"' .. (reachedMax and " --[[ MAXIMUM STRING SIZE REACHED, CHANGE 'getgenv().SimpleSpyMaxStringSize' TO ADJUST MAXIMUM SIZE ]]" or "")
+    return '"' .. handled .. '"' .. (reachedMax and " --[[ MAXIMUM STRING SIZE REACHED ]]" or "")
 end
 
 local typev2sfunctions = {
