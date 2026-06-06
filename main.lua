@@ -338,6 +338,5 @@ function v2s(v, l, p, n, vtv, i, pt, path, tables, tI)
 end
 
 return function(value)
-  newValueLol = ("\n%s"):format(v2s(value))
-  print(newValueLol)
+    return ("\n%s"):format(v2s(value))
 end
