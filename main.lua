@@ -16,9 +16,15 @@ local delay = task.delay
 local spawn = task.spawn
 local clear = table.clear
 local clone = table.clone
-local RunService = game.GetService(game, "RunService")
+local OldDebugId = game.GetDebugId
+local function SafeGetService(service)
+    return cloneref(game:GetService(service))
+end
+local Players = SafeGetService("Players")
+local RunService = SafeGetService("RunService")
 
 local scheduled = {}
+local generation = {}
 
 local function taskscheduler()
     if not toggle then
@@ -33,6 +39,14 @@ local function taskscheduler()
         table.remove(scheduled, 1)
         if type(currentf) == "table" and type(currentf[1]) == "function" then
             pcall(unpack(currentf))
+        end
+    end
+end
+
+function getplayer(instance)
+    for _, v in next, Players:GetPlayers() do
+        if v.Character and (instance:IsDescendantOf(v.Character) or instance == v.Character) then
+            return v
         end
     end
 end
@@ -70,6 +84,30 @@ local function rawtostring(userdata)
     end
     return tostring(userdata)
 end
+
+local CustomGeneration = {
+    Vector3 = (function()
+        local temp = {}
+        for i,v in Vector3 do
+            if type(v) == "vector" then
+                temp[v] = `Vector3.{i}`
+            end
+        end
+        return temp
+    end)(),
+    Vector2 = (function()
+        local temp = {}
+        for i,v in Vector2 do
+            if type(v) == "userdata" then
+                temp[v] = `Vector2.{i}`
+            end
+        end
+        return temp
+    end)(),
+    CFrame = {
+        [CFrame.identity] = "CFrame.identity"
+    }
+}
 
 local number_table = {
     ["inf"] = "math.huge",
@@ -257,6 +295,71 @@ function t2s(t, l, p, n, vtv, i, pt, path, tables, tI)
     return s .. "}"
 end
 
+function i2p(i,customgen)
+    if customgen then
+        return customgen
+    end
+    local player = getplayer(i)
+    local parent = i
+    local out = ""
+    if parent == nil then
+        return "nil"
+    elseif player then
+        while true do
+            if parent and parent == player.Character then
+                if player == Players.LocalPlayer then
+                    return 'game:GetService("Players").LocalPlayer.Character' .. out
+                else
+                    return i2p(player) .. ".Character" .. out
+                end
+            else
+                if parent.Name:match("[%a_]+[%w+]*") ~= parent.Name then
+                    out = ':FindFirstChild(' .. formatstr(parent.Name) .. ')' .. out
+                else
+                    out = "." .. parent.Name .. out
+                end
+            end
+            task.wait()
+            parent = parent.Parent
+        end
+    elseif parent ~= game then
+        while true do
+            if parent and parent.Parent == game then
+                if SafeGetService(parent.ClassName) then
+                    if lower(parent.ClassName) == "workspace" then
+                        return `workspace{out}`
+                    else
+                        return 'game:GetService("' .. parent.ClassName .. '")' .. out
+                    end
+                else
+                    if parent.Name:match("[%a_]+[%w_]*") then
+                        return "game." .. parent.Name .. out
+                    else
+                        return 'game:FindFirstChild(' .. formatstr(parent.Name) .. ')' .. out
+                    end
+                end
+            elseif not parent.Parent then
+                getnilrequired = true
+                return 'getNil(' .. formatstr(parent.Name) .. ', "' .. parent.ClassName .. '")' .. out
+            else
+                if parent.Name:match("[%a_]+[%w_]*") ~= parent.Name then
+                    out = ':WaitForChild(' .. formatstr(parent.Name) .. ')' .. out
+                else
+                    out = ':WaitForChild("' .. parent.Name .. '")'..out
+                end
+            end
+            if i:IsDescendantOf(Players.LocalPlayer) then
+                return 'game:GetService("Players").LocalPlayer'..out
+            end
+            parent = parent.Parent
+            task.wait()
+        end
+    else
+        return "game"
+    end
+end
+
+
 local function isFinished(coroutines: table)
     for _, v in next, coroutines do
         if status(v) == "running" then
@@ -369,6 +472,15 @@ end
 if not getgenv().runningV2Sscheduler then
     getgenv().runningV2Sscheduler = true
     RunService.Heartbeat:Connect(taskscheduler)
+    spawn(function()
+            local lp = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() or Players.LocalPlayer
+            generation = {
+                [OldDebugId(lp)] = 'game:GetService("Players").LocalPlayer',
+                [OldDebugId(lp:GetMouse())] = 'game:GetService("Players").LocalPlayer:GetMouse',
+                [OldDebugId(game)] = "game",
+                [OldDebugId(workspace)] = "workspace"
+            }
+    end)
 end
 
 return function(value)
