@@ -1,4 +1,3 @@
-
 local indent = 4
 local lower = string.lower
 local byte = string.byte
@@ -234,7 +233,6 @@ function t2s(t, l, p, n, vtv, i, pt, path, tables, tI)
         end
         if rawequal(k, t) then -- checks if the table being iterated over is being used as an index within itself (yay, lua)
             bottomstr ..= `\n{n}{path}[{n}{path}] = {(rawequal(v,k) and `{n}{path}` or v2s(v, l, p, n, vtv, k, t, `{path}[{n}{path}]`, tables))}`
-            --bottomstr = bottomstr .. "\n" .. rawtostring(n) .. rawtostring(path) .. "[" .. rawtostring(n) .. rawtostring(path) .. "]" .. " = " .. (rawequal(v, k) and rawtostring(n) .. rawtostring(path) or v2s(v, l, p, n, vtv, k, t, path .. "[" .. rawtostring(n) .. rawtostring(path) .. "]", tables))
             size -= 1
             continue
         end
@@ -310,7 +308,6 @@ function handlespecials(s, indentation)
                 i += 1
             elseif byte(char) > 126 or byte(char) < 32 then
                 resume(c, i, "\\" .. byte(char))
-                -- s = s:sub(0, i - 1) .. "\\" .. byte(char) .. s:sub(i + 1, -1)
                 i += #rawtostring(byte(char))
             end
             if i >= n * 100 then
@@ -345,7 +342,7 @@ local typev2sfunctions = {
         if ufunctions[vtypeof] then
             return ufunctions[vtypeof](v)
         end
-        return `{vtypeof}({rawtostring(v)}) --[[Generation Failure]]`
+        return `{vtypeof}({rawtostring(v)})`
     end,
     vector = ufunctions["Vector3"]
 }
@@ -366,7 +363,7 @@ function v2s(v, l, p, n, vtv, i, pt, path, tables, tI)
     elseif vtypefunc then
         return vtypefunc(v,vtypeof)
     end
-    return `{vtypeof}({rawtostring(v)}) --[[Generation Failure]]`
+    return `{vtypeof}({rawtostring(v)})`
 end
 
 if not getgenv().runningV2Sscheduler then
