@@ -18,6 +18,37 @@ local spawn = task.spawn
 local clear = table.clear
 local clone = table.clone
 
+local scheduled = {}
+
+local function taskscheduler()
+    if not toggle then
+        scheduled = {}
+        return
+    end
+    if #scheduled > 400 then
+        table.remove(scheduled, #scheduled)
+    end
+    if #scheduled > 0 then
+        local currentf = scheduled[1]
+        table.remove(scheduled, 1)
+        if type(currentf) == "table" and type(currentf[1]) == "function" then
+            pcall(unpack(currentf))
+        end
+    end
+end
+
+function schedule(f, ...)
+    table.insert(scheduled, {f, ...})
+end
+
+function scheduleWait()
+    local thread = running()
+    schedule(function()
+        resume(thread)
+    end)
+    yield()
+end
+
 local function rawtostring(userdata)
     if type(userdata) == "table" or typeof(userdata) == "userdata" then
         local rawmetatable = getrawmetatable(userdata)
@@ -335,6 +366,11 @@ function v2s(v, l, p, n, vtv, i, pt, path, tables, tI)
         return vtypefunc(v,vtypeof)
     end
     return `{vtypeof}({rawtostring(v)}) --[[Generation Failure]]`
+end
+
+if not getgenv().runningV2Sscheduler then
+    getgenv().runningV2Sscheduler = true
+    RunService.Heartbeat:Connect(taskscheduler)
 end
 
 return function(value)
