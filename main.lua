@@ -17,6 +17,7 @@ local delay = task.delay
 local spawn = task.spawn
 local clear = table.clear
 local clone = table.clone
+local RunService = game.GetService(game, "RunService")
 
 local scheduled = {}
 
